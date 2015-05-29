@@ -133,6 +133,11 @@ package org.mangui.hls {
             _streamBuffer.flushBuffer();
             _hlsNetStream.seek(position);
         };
+        
+        public function flushBuffer() : void{
+            _streamBuffer.flushBuffer();
+            _hlsNetStream.seek(position);
+        };
 
         /*  set quality level for next loaded fragment (-1 for automatic level selection) */
         public function set nextLevel(level : int) : void {

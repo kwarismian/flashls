@@ -21,7 +21,7 @@ package org.mangui.hls.stream {
     import org.mangui.hls.loader.AltAudioFragmentLoader;
     import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.model.AudioTrack;
-    import org.mangui.hls.model.Fragment;
+    //import org.mangui.hls.model.Fragment;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;

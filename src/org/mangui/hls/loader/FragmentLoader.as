@@ -95,6 +95,7 @@ package org.mangui.hls.loader {
         private static const LOADING_FRAGMENT_IO_ERROR : int = 4;
         private static const LOADING_KEY_IO_ERROR : int = 5;
         private static const LOADING_COMPLETED : int = 6;
+        private var _fragNumTimeouts : int = 0;
 
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController, streamBuffer : StreamBuffer) : void {
@@ -146,6 +147,19 @@ package org.mangui.hls.loader {
                 case LOADING_WAITING_LEVEL_UPDATE:
                 // loading already in progress
                 case LOADING_IN_PROGRESS:
+                /*var _loading_duration : uint = getTimer() - _metrics.loading_request_time;
+            
+                if(_loading_duration > 15000)
+                {
+                
+                    if (_fragstreamloader.connected) {
+                        _fragstreamloader.close();
+                    }
+                    CONFIG::LOGGING {
+                        Log.debug("Fragment load timed out, flushing buffer :: " + _loadingState);
+                    }
+                    _hls.flushBuffer();
+                }*/
                     break;
                 // no loading in progress, try to load first/next fragment
                 case LOADING_IDLE:
@@ -249,6 +263,7 @@ package org.mangui.hls.loader {
                     break;
                 case LOADING_COMPLETED:
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.LAST_VOD_FRAGMENT_LOADED));
+                    _fragNumTimeouts = 0;
                     // stop loading timer as well, as no other fragments can be loaded
                     _timer.stop();
                     break;
@@ -258,6 +273,9 @@ package org.mangui.hls.loader {
                     }
                     break;
             }
+            
+            
+            
         }
 
         public function seek(position : Number) : void {
@@ -375,6 +393,7 @@ package org.mangui.hls.loader {
 
         private function _fragLoadProgressHandler(event : ProgressEvent) : void {
             var fragData : FragmentData = _fragCurrent.data;
+            
             if (fragData.bytes == null) {
                 fragData.bytes = new ByteArray();
                 fragData.bytesLoaded = 0;
@@ -474,6 +493,8 @@ package org.mangui.hls.loader {
         private function _fragDecryptCompleteHandler() : void {
             if (_loadingState == LOADING_IDLE)
                 return;
+            
+                
             var fragData : FragmentData = _fragCurrent.data;
 
             if (fragData.decryptAES) {
@@ -579,6 +600,7 @@ package org.mangui.hls.loader {
             }
             var frag : Fragment = _levels[level].getFragmentBeforePosition(position);
             _hasDiscontinuity = true;
+            _fragNumTimeouts = 0;
             CONFIG::LOGGING {
                 Log.debug("Loading       " + frag.seqnum + " of [" + (_levels[level].start_seqnum) + "," + (_levels[level].end_seqnum) + "],level " + level);
             }
@@ -683,6 +705,7 @@ package org.mangui.hls.loader {
         };
 
         private function _loadfragment(frag : Fragment) : void {
+            _fragNumTimeouts = 0;
             // postpone URLStream init before loading first fragment
             if (_fragstreamloader == null) {
                 var urlStreamClass : Class = _hls.URLstream as Class;
@@ -692,6 +715,7 @@ package org.mangui.hls.loader {
                 _fragstreamloader.addEventListener(ProgressEvent.PROGRESS, _fragLoadProgressHandler);
                 _fragstreamloader.addEventListener(HTTPStatusEvent.HTTP_STATUS, _fragLoadHTTPStatusHandler);
                 _fragstreamloader.addEventListener(Event.COMPLETE, _fragLoadCompleteHandler);
+                _fragstreamloader.addEventListener(Event.OPEN, _fragLoadOpenHandler);
                 _keystreamloader = (new urlStreamClass()) as URLStream;
                 _keystreamloader.addEventListener(IOErrorEvent.IO_ERROR, _keyLoadErrorHandler);
                 _keystreamloader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _keyLoadErrorHandler);
@@ -726,6 +750,12 @@ package org.mangui.hls.loader {
             } catch (error : Error) {
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, frag.url, error.message);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
+            }
+        }
+        
+        private function _fragLoadOpenHandler(event: Event): void {
+            CONFIG::LOGGING {
+                Log.debug("frag url stream opened");
             }
         }
 

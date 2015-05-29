@@ -352,8 +352,11 @@ package org.mangui.hls.playlist {
                     if(!(level.bitrate in bitrateDictionary)) {
                         level.url = _extractURL(line, base);
                         level.manifest_index = levels.length;
-                        levels.push(level);
-                        bitrateDictionary[level.bitrate] = true;
+                        if(level.height >= 360)
+                        {
+                            levels.push(level);
+                            bitrateDictionary[level.bitrate] = true;
+                        }
                     } else {
                        CONFIG::LOGGING {
                             Log.debug("discard failover level with bitrate " + level.bitrate);
@@ -371,6 +374,22 @@ package org.mangui.hls.playlist {
 
         /* compare level, smallest bitrate first */
         private static function compareLevel(x : Level, y : Level) : Number {
+            if(x.height && y.height)
+            {
+                if(x.height == y.height)
+                {
+                    return (x.bitrate - y.bitrate);   
+                }
+                else if(x.height > y.height)
+                {
+                    return 1;
+                }
+                else if(x.height < y.height)
+                {
+                    return -1;
+                }
+            }
+            
             return (x.bitrate - y.bitrate);
         }
 

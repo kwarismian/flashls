@@ -17,7 +17,7 @@ package org.mangui.hls.controller {
         /** Reference to the HLS controller. **/
         private var _hls : HLS;
         // max nb of samples used for bw checking. the bigger it is, the more conservative it is.
-        private static const MAX_SAMPLES : int = 30;
+        private static const MAX_SAMPLES : int = 60;
         private var _bw : Vector.<Number>;
         private var _nbSamples : uint;
         private var _targetduration : Number;
@@ -88,7 +88,7 @@ package org.mangui.hls.controller {
                  *                                  this part is a simple rule by 3, assuming we keep same dl bandwidth
                  *  bw ratio is the conservative factor, assuming that next segment will be downloaded with min bandwidth
                  */
-                _minBufferLength = metrics.processing_duration * (_targetduration / metrics.duration) * bw_ratio;
+                _minBufferLength = metrics.processing_duration * (_targetduration / metrics.duration) * bw_ratio * 1.5;
                 // avoid min > max
                 if (HLSSettings.maxBufferLength) {
                     _minBufferLength = Math.min(HLSSettings.maxBufferLength, _minBufferLength);

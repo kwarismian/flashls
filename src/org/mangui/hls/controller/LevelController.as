@@ -29,6 +29,8 @@ package org.mangui.hls.controller {
         private var _bitrate : Vector.<Number> = null;
         /** vector of levels with unique dimension with highest bandwidth **/
         private var _maxUniqueLevels : Vector.<Level> = null;
+        /** vector of levels with unique dimension with lowest bandwidth **/
+        private var _minUniqueLevels : Vector.<Level> = null;
         /** nb level **/
         private var _nbLevel : int = 0;
         private var _lastSegmentDuration : Number;
@@ -111,18 +113,26 @@ package org.mangui.hls.controller {
 
             if (HLSSettings.capLevelToStage) {
                 _maxUniqueLevels = _maxLevelsWithUniqueDimensions;
+                _minUniqueLevels = _minLevelsWithUniqueDimensions;
+                CONFIG::LOGGING {
+                    for(i = 0; i < _minUniqueLevels.length; i++)
+                    {
+                        Log.debug("minUniqueLevels :: " + _minUniqueLevels[i].index);
+                    }
+                }
             }
         }
         ;
 
         public function getbestlevel(downloadBandwidth : Number) : int {
             var max_level : int = _maxLevel;
-            for (var i : int = max_level; i >= 0; i--) {
+            var min_level : int = _minLevel;
+            for (var i : int = max_level; i >= min_level; i--) {
                 if (_bitrate[i] <= downloadBandwidth) {
                     return i;
                 }
             }
-            return 0;
+            return min_level;
         }
 
         private function get _maxLevelsWithUniqueDimensions() : Vector.<Level> {
@@ -141,6 +151,24 @@ package org.mangui.hls.controller {
             };
 
             return _hls.levels.filter(filter);
+        }
+        
+        private function get _minLevelsWithUniqueDimensions() : Vector.<Level> {
+            var filter2 : Function = function(l : Level, i : int, v : Vector.<Level>) : Boolean {
+                if (l.width > 0 && l.height > 0) {
+                    if (i - 1 > 0) {
+                        var previousLevel : Level = v[i - 1];
+                        if (l.width != previousLevel.width && l.height != previousLevel.height) {
+                            return true;
+                        }
+                    } else {
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            return _hls.levels.filter(filter2);
         }
 
 
@@ -205,6 +233,44 @@ package org.mangui.hls.controller {
                 return _nbLevel - 1;
             }
         }
+        
+        private function get _minLevel() : int {
+            var minLevelsCount : int = _minUniqueLevels.length;
+            
+            if(_hls.stage && minLevelsCount && this._hls.stage.stageHeight >= 720)
+            {
+                var minLevel : Level = this._minUniqueLevels[0],
+                 minLevelIdx : int = minLevel.index,
+                     lHeight : int, 
+                           i : int;
+                
+                
+                for(i = 0; i < minLevelsCount; i++)
+                {
+                    minLevel = this._minUniqueLevels[i];
+                    minLevelIdx = minLevel.index;
+                    lHeight = minLevel.height;
+                    
+                    if(lHeight >= 720)
+                    {
+                        break;
+                    }
+                }
+                CONFIG::LOGGING {
+                    Log.debug("min capped level idx: " + minLevelIdx);
+                }
+                
+                return minLevelIdx;
+            }
+            else
+            {
+                CONFIG::LOGGING {
+                    Log.debug("no min capped level");
+                }
+                return 0;
+            }
+            
+        }
 
         /** Update the quality level for the next fragment load. **/
         public function getnextlevel(current_level : int, buffer : Number) : int {
@@ -221,6 +287,7 @@ package org.mangui.hls.controller {
             var rsft : Number = 1000 * buffer - 2 * _lastFetchDuration;
             var sftm : Number = Math.min(_lastSegmentDuration, rsft) / _lastFetchDuration;
             var max_level : Number = _maxLevel;
+            var min_level : Number = _minLevel;
             var switch_to_level : int = current_level;
             // CONFIG::LOGGING {
             // Log.info("rsft:" + rsft);
@@ -264,6 +331,7 @@ package org.mangui.hls.controller {
 
             // Then we should check if selected level is higher than max_level if so, than take the min of those two
             switch_to_level = Math.min(max_level, switch_to_level);
+            switch_to_level = Math.max(min_level, switch_to_level);
 
             CONFIG::LOGGING {
                 if (switch_to_level != current_level) {
