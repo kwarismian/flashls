@@ -185,6 +185,9 @@ package org.mangui.hls.controller {
         private function get _maxLevel() : int {
             // if set, _autoLevelCapping takes precedence
             if(_autoLevelCapping >= 0) {
+                CONFIG::LOGGING {
+                    Log.debug("auto level capping set");
+                }
                 return Math.min(_nbLevel - 1, _autoLevelCapping);
             } else if (HLSSettings.capLevelToStage) {
                 var maxLevelsCount : int = _maxUniqueLevels.length;
@@ -230,46 +233,54 @@ package org.mangui.hls.controller {
                 }
                 return maxLevelIdx;
             } else {
+                CONFIG::LOGGING {
+                    Log.debug("no max capped level");
+                }
                 return _nbLevel - 1;
             }
         }
         
         private function get _minLevel() : int {
-            var minLevelsCount : int = _minUniqueLevels.length;
             
-            if(_hls.stage && minLevelsCount && this._hls.stage.stageHeight >= 720)
-            {
-                var minLevel : Level = this._minUniqueLevels[0],
-                 minLevelIdx : int = minLevel.index,
-                     lHeight : int, 
-                           i : int;
+            if (HLSSettings.capLevelToStage) {
+                var minLevelsCount : int = _minUniqueLevels.length;
                 
-                
-                for(i = 0; i < minLevelsCount; i++)
+                if(_hls.stage && minLevelsCount && this._hls.stage.stageHeight >= 720)
                 {
-                    minLevel = this._minUniqueLevels[i];
-                    minLevelIdx = minLevel.index;
-                    lHeight = minLevel.height;
+                    var minLevel : Level = this._minUniqueLevels[0],
+                     minLevelIdx : int = minLevel.index,
+                         lHeight : int, 
+                               i : int;    
                     
-                    if(lHeight >= 720)
+                    for(i = 0; i < minLevelsCount; i++)
                     {
-                        break;
+                        minLevel = this._minUniqueLevels[i];
+                        minLevelIdx = minLevel.index;
+                        lHeight = minLevel.height;
+                        
+                        if(lHeight >= 720)
+                        {
+                            break;
+                        }
                     }
+                    CONFIG::LOGGING {
+                        Log.debug("min capped level idx: " + minLevelIdx);
+                    }
+                    
+                    return minLevelIdx;
                 }
-                CONFIG::LOGGING {
-                    Log.debug("min capped level idx: " + minLevelIdx);
+                else
+                {
+                    CONFIG::LOGGING {
+                        Log.debug("no min capped level");
+                    }
+                    return 0;
                 }
-                
-                return minLevelIdx;
             }
             else
             {
-                CONFIG::LOGGING {
-                    Log.debug("no min capped level");
-                }
                 return 0;
             }
-            
         }
 
         /** Update the quality level for the next fragment load. **/

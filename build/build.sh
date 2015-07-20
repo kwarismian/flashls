@@ -27,15 +27,15 @@ OPT_RELEASE_10_1="-use-network=false \
 
 echo "Compiling bin/debug/flashls.swc"
 $FLEXPATH/bin/compc \
-    $OPT_DEBUG_10_1 \
+    $OPT_DEBUG \
     -include-sources ../src/org/mangui/hls \
     -output ../bin/debug/flashls.swc \
-    -target-player="10.1"
+    -target-player="11.1"
 
 echo "Compiling bin/release/flashls.swc"
 $FLEXPATH/bin/compc \
-    $OPT_RELEASE_10_1 \
+    $OPT_RELEASE \
     -include-sources ../src/org/mangui/hls \
     -output ../bin/release/flashls.swc \
-    -target-player="10.1"
+    -target-player="11.1"
 
